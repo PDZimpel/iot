@@ -13,6 +13,38 @@ import dimna.model.solution;
 import dimna.model.options;
 import dimna.io.output_writer;
 
+import dimna.allocator.di_allocator;
+
+mna::di::Options setup_options(int argc, char* argv[]);
+std::shared_ptr<mna::IoTNetwork> setup_network(mna::InstanceStructure& instance, mna::ParquetReader& pr);
+mna::JobVector setup_jobs(std::filesystem::path& jobs_file, mna::ParquetReader& pr);
+
+int
+main (int argc, char *argv[]) {
+  
+  mna::di::Options di_options = setup_options(argc, argv);
+  mna::InstancesMap instances_map = mna::scan_input_dir(di_options.input_dir);
+  
+  mna::ParquetReader pr;
+
+  constexpr int CUT_SOL = 2;
+  
+  // Looping on different networks present at the input folder
+  for (auto& [key, instance] : instances_map){
+
+    auto network = setup_network(instance, pr);
+
+    mna::di::DiRunner<mna::di::FixedDiAllocator<CUT_SOL>> runner(network, di_options);
+    // Looping through jobs configurantions (light and heavy)
+    for (auto& jobs_file : instance.jobs){
+      mna::JobVector jobs = setup_jobs(jobs_file, pr);
+
+      runner.run_mna_jobs_batch(jobs);
+    }
+  }
+
+  return 0;
+}
 mna::di::Options
 setup_options(int argc, char* argv[]){
   
@@ -68,29 +100,4 @@ setup_jobs(std::filesystem::path& jobs_file, mna::ParquetReader& pr){
   pr.read_jobs(jobs_file, add_job);
 
   return jobsV;
-}
-
-int
-main (int argc, char *argv[]) {
-  
-  mna::di::Options di_options = setup_options(argc, argv);
-  mna::InstancesMap instances_map = mna::scan_input_dir(di_options.input_dir);
-  
-  mna::ParquetReader pr;
-  
-  // Looping on different networks present at the input folder
-  for (auto& [key, instance] : instances_map){
-
-    auto network = setup_network(instance, pr);
-
-    mna::di::DiRunner runner(network, di_options);
-    // Looping through jobs configurantions (light and heavy)
-    for (auto& jobs_file : instance.jobs){
-      mna::JobVector jobs = setup_jobs(jobs_file, pr);
-
-      runner.run_mna_jobs_batch(jobs);
-    }
-  }
-
-  return 0;
 }
