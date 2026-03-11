@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 23)
 add_library(libdimna)
 
 find_package(tabulate CONFIG REQUIRED)
+find_package(OpenMP REQUIRED)
 
 target_sources(libdimna
   PUBLIC
@@ -13,6 +14,7 @@ target_sources(libdimna
   model/Solution.mpp
   model/Options.mpp
   policy/searcher/FixedSearcher.mpp
+  policy/searcher/OpenMPFixedSearcher.mpp
 )
 
 target_link_libraries(libdimna
@@ -22,6 +24,7 @@ target_link_libraries(libdimna
 
 target_link_libraries(libdimna PRIVATE 
  tabulate::tabulate 
+ OpenMP::OpenMP_CXX
 )
 # target_compile_options(libgraphs PRIVATE -Werror)
 
