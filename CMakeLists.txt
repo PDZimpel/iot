@@ -13,7 +13,7 @@ set(CMAKE_CXX_MODULE_STD 1)
 set(CMAKE_CXX_STANDARD 23)
 
 option(ENABLE_COVERAGE "Activate flags for gcov" OFF)
-
+option(ENABLE_GPROG "Activate gprof" OFF)
 if(ENABLE_COVERAGE)
     add_compile_options(--coverage -O0 -g)
     add_link_options(--coverage)
