@@ -13,6 +13,10 @@ target_sources(libdimna
   io/OutputWriter.mpp
   model/Solution.mpp
   model/Options.mpp
+  model/Times.mpp
+  policy/filter/FixedFilter.mpp
+  policy/filter/CanonFixedFilter.mpp
+  policy/filter/OpenMPFixedFilter.mpp
   policy/searcher/FixedSearcher.mpp
   policy/searcher/OpenMPFixedSearcher.mpp
 )
@@ -20,11 +24,12 @@ target_sources(libdimna
 target_link_libraries(libdimna
   PRIVATE
   libMNA
+  PUBLIC
+  OpenMP::OpenMP_CXX
 )
 
 target_link_libraries(libdimna PRIVATE 
  tabulate::tabulate 
- OpenMP::OpenMP_CXX
 )
 # target_compile_options(libgraphs PRIVATE -Werror)
 
