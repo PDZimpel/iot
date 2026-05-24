@@ -313,15 +313,15 @@ extern "C" void search_comb_space(
         return;
     }
 
-    /* !!! Removed this for better performance, if overflow the results will be just wrong
+    // /* !!! Removed this for better performance, if overflow the results will be just wrong
     int64_t range = combinatorial_range(n, k);
     if (range < 0) {
         printf("ERROR: Range overflow\n");
         *best_of = INT64_MAX;
-        *best_comb_idx = -1;
+        *best_comb = -1;
         return;
     }
-    */
+    // */
 
     int* d_resources = nullptr;
     int* d_bandwidths = nullptr;

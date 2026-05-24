@@ -79,7 +79,7 @@ DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
   Times times{};  
   // int t = 0;
   for (auto& job : jobs){
-    printf("Table index: %d\n", t++);
+    // printf("Table index: %d\n", t++);
     auto origin = job.origin;
     
     auto start = std::chrono::steady_clock::now();
