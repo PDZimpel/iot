@@ -6,6 +6,11 @@ find_package(tabulate CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
 
 target_sources(libdimna
+  PRIVATE
+    policy/searcher/kernel/comb_searcher.cu
+  )
+
+target_sources(libdimna
   PUBLIC
   FILE_SET cxx_modules TYPE CXX_MODULES FILES
   allocator/DiAllocator.mpp
@@ -19,6 +24,7 @@ target_sources(libdimna
   policy/filter/OpenMPFixedFilter.mpp
   policy/searcher/FixedSearcher.mpp
   policy/searcher/OpenMPFixedSearcher.mpp
+  policy/searcher/CudaCombinatorialSearcher.mpp
 )
 
 target_link_libraries(libdimna

@@ -22,7 +22,14 @@ export template <int CutSol> class FixedSearcher;
 
 template <>
 class FixedSearcher<1>{
+
+private:
+  int _cs;
+
 public:
+
+  FixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
+
   Solution 
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
     
@@ -61,7 +68,15 @@ public:
 };
 template <>
 class FixedSearcher<2>{
+
+private:
+
+  int _cs;
+
 public:
+
+  FixedSearcher(int cut_sol=2) : _cs{cut_sol} {}
+
   Solution 
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
     
@@ -121,7 +136,15 @@ public:
 };
 template <>
 class FixedSearcher<3>{
+
+private:
+
+  int _cs;
+
 public:
+
+  FixedSearcher(int cut_sol=3) : _cs{cut_sol} {}
+
   Solution 
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
     
@@ -194,7 +217,7 @@ public:
 
             auto OF = (f0 * f0) + (f1 * f1) - f2;
 
-            if (OF < best_OF){
+            if (OF < best_OF){  
               best_OF = OF;
               best_comb[0] = i;
               best_comb[1] = j;

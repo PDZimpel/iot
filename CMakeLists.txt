@@ -4,7 +4,7 @@ set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD
   "d0edc3af-4c50-42ea-a356-e2862fe7a444"
 )
 
-project(graphs VERSION 0.0.1 LANGUAGES CXX)
+project(graphs VERSION 0.0.1 LANGUAGES CXX CUDA)
 
 include(CTest)
 
@@ -26,12 +26,15 @@ else()
   add_compile_options(-O3)
 endif()
 
+add_compile_options(-ftrapv)
+
 add_subdirectory(libgraphs)
 add_subdirectory(libMNA)
 add_subdirectory(libdimna)
 add_subdirectory(dimna)
 add_subdirectory(canon_dimna)
-add_subdirectory(openmp_dimna)
+add_subdirectory(openmp_gradient_dimna)
+add_subdirectory(cuda_dimna)
 
 # if (BUILD_TESTING)
   # add_subdirectory(test)

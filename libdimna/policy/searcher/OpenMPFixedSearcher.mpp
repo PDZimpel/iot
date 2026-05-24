@@ -38,6 +38,15 @@ lexical_compare(const A& a, const B& b)
 template <>
 class OpenMPFixedSearcher<1>{
 public:
+
+private:
+
+  int _cs;
+
+public:
+
+  OpenMPFixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
+
   Solution 
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
     
@@ -101,7 +110,15 @@ public:
 
 template <>
 class OpenMPFixedSearcher<2>{
+
+private:
+
+  int _cs;
+
 public:
+
+  OpenMPFixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
+
   Solution 
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
     
@@ -204,7 +221,15 @@ public:
 
 template <>
 class OpenMPFixedSearcher<3>{
+
+private:
+
+  int _cs;
+
 public:
+
+  OpenMPFixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
+
   Solution 
   find_best_comb(std::shared_ptr<IoTNetwork> network, const mna::Job& job, const std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
     

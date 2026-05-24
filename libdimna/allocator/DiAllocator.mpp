@@ -22,6 +22,7 @@ import dimna.policy.filter.openmp.fixed_filter;
 
 import dimna.policy.searcher.fixed_searcher;
 import dimna.policy.searcher.openmp.fixed_searcher;
+import dimna.policy.searcher.cuda.comb_searcher;
 
 namespace mna::di {
 
@@ -52,7 +53,7 @@ public:
   std::vector<int> preselect_nodes(Job& job, std::vector<int32_t>& latencies);
 
   FilterPolicy fp;
-  SearchPolicy sp;
+  SearchPolicy sp{cut_sol};
 
   void reset_nodes(){
     auto& nodes = network->vertexes();
@@ -78,6 +79,7 @@ DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
   Times times{};  
   // int t = 0;
   for (auto& job : jobs){
+    printf("Table index: %d\n", t++);
     auto origin = job.origin;
     
     auto start = std::chrono::steady_clock::now();
@@ -189,4 +191,6 @@ export template<int CutSol> using FixedDiAllocator = DiAllocator<policy::FixedFi
 export template<int CutSol> using CanonFixedDiAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::FixedSearcher<CutSol>>;
 
 export template<int CutSol> using OpenMPFixedAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::OpenMPFixedSearcher<CutSol>>;
+
+export template<int CutSol> using CudaAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::CudaCombSearcher>;
 } // dimna namespace
