@@ -45,13 +45,13 @@ public:
     return top/bot;
   }
 
-  std::vector<int> infer_combination(const int64_t i, const int64_t n)
+  std::vector<int> infer_combination(const int64_t i, const int64_t n, int k)
   {
     int64_t b;
     std::vector<int> comb;
 
     int64_t prefix = 0;
-    for(b = 0; b < _bbs.size(); b++){
+    for(b = 0; b < k; b++){
         int64_t calc = binom(n, b + 1);
         if(i < prefix + calc)
             break;
@@ -121,7 +121,6 @@ public:
 
     int64_t best_comb;
     int64_t bof;
-    
     search_comb_space(
   // Hyperparameters
     valid_nodes.size(),
@@ -143,7 +142,7 @@ public:
 
     std::array<int, 3> bcomb;
 
-    auto comb = infer_combination(best_comb, num_nodes);
+    auto comb = infer_combination(best_comb, num_nodes, _cs);
 
     for(int i=0; i<comb.size(); i++){
       comb[i] = valid_nodes[comb[i]];

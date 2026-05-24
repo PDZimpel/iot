@@ -313,15 +313,16 @@ extern "C" void search_comb_space(
         return;
     }
 
-    // /* !!! Removed this for better performance, if overflow the results will be just wrong
+    /* !!! Removed this for better performance, if overflow the results will be just wrong
     int64_t range = combinatorial_range(n, k);
     if (range < 0) {
         printf("ERROR: Range overflow\n");
         *best_of = INT64_MAX;
         *best_comb = -1;
+        exit(1);
         return;
     }
-    // */
+    */
 
     int* d_resources = nullptr;
     int* d_bandwidths = nullptr;
@@ -350,14 +351,15 @@ extern "C" void search_comb_space(
     int blocks = prop.multiProcessorCount * 32;
 
     //printf("Launching with %d blocks, %d threads\n", blocks, threads);
-
+    //fflush(stdout);
     find_best_comb<<<blocks, threads>>>(
         n, k,
         d_resources, d_bandwidths, d_latencies,
         jr, jb, jl,
         d_best
     );
-
+    //printf("Finished\n");
+    //fflush(stdout);
     /* Error Checking
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
@@ -384,4 +386,8 @@ extern "C" void search_comb_space(
     cudaFree(d_bandwidths);
     cudaFree(d_latencies);
     cudaFree(d_best);
+    /*
+    printf("Goto host\n");
+    fflush(stdout);
+    */
 }
