@@ -3,18 +3,16 @@
 #include <memory>
 #include <filesystem>
 #include <string>
-#include <omp.h>
-import mna.io.cli_parser;
-import mna.io.directory_scanner;
-import mna.io.parquet_reader;
-import mna.model.iot_network;
-import mna.model.job;
-import dimna.allocator.di_runner;
-import dimna.model.solution;
-import dimna.model.options;
-import dimna.io.output_writer;
-
-import dimna.allocator.di_allocator;
+#include "libMNA/io/cli_parser.hpp"
+#include "libMNA/io/directory_scanner.hpp"
+#include "libMNA/io/ParquetReader.hpp"
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
+#include "libdimna/allocator/DiRunner.hpp"
+#include "libdimna/model/Solution.hpp"
+#include "libdimna/model/Options.hpp"
+#include "libdimna/io/OutputWriter.hpp"
+#include "libdimna/allocator/DiAllocator.hpp"
 
 mna::di::Options setup_options(int argc, char* argv[]);
 std::shared_ptr<mna::IoTNetwork> setup_network(mna::InstanceStructure& instance, mna::ParquetReader& pr);
@@ -23,13 +21,18 @@ void run(std::shared_ptr<mna::IoTNetwork> network, mna::JobVector& jobs, mna::di
 
 int
 main (int argc, char *argv[]) {
-
+  
   mna::di::Options di_options = setup_options(argc, argv);
   mna::InstancesMap instances_map = mna::scan_input_dir(di_options.input_dir);
   
   mna::ParquetReader pr;
+
+  
+  constexpr int CUT_SOL = 2;
+  
   // Looping on different networks present at the input folder
   for (auto& [key, instance] : instances_map){
+  
     auto network = setup_network(instance, pr);
 
     // Looping through jobs configurantions (light and heavy)
@@ -39,29 +42,29 @@ main (int argc, char *argv[]) {
       run(network, jobs, di_options);
     }
   }
-
   return 0;
 }
 
 void 
 run(std::shared_ptr<mna::IoTNetwork> network, mna::JobVector& jobs, mna::di::Options di_options){
+ 
   switch (di_options.cut_sol){
     case 1:{
       mna::di::DiRunner<mna::di::OpenMPFixedAllocator<1>> runner(network, di_options);
 
-      runner.run_mna_jobs_batch(jobs);
+      runner.run_mna_jobs_batch(jobs, di_options.sample_size);
     }
     break;
     case 2:{
       mna::di::DiRunner<mna::di::OpenMPFixedAllocator<2>> runner(network, di_options);
 
-      runner.run_mna_jobs_batch(jobs);
+      runner.run_mna_jobs_batch(jobs, di_options.sample_size);
     }  
     break;
     case 3:{
       mna::di::DiRunner<mna::di::OpenMPFixedAllocator<3>> runner(network, di_options);
 
-      runner.run_mna_jobs_batch(jobs);
+      runner.run_mna_jobs_batch(jobs, di_options.sample_size);
     }
       break;
  } 
@@ -73,18 +76,21 @@ setup_options(int argc, char* argv[]){
   std::string str_cs;
   std::string str_ccn;
   std::string str_nR;
+  std::string str_ss;
 
   mna::OptionsMap map = {{"--cs", &str_cs},
                         {"--ccn", &str_ccn},
-                        {"--runs", &str_nR}};
+                        {"--runs", &str_nR},
+                        {"--sample_size", &str_ss}};
 
   mna::Config config = mna::read_CLI(argc, argv, map);
 
   int cut_sol = std::stoi(str_cs);
   int cut_comb_nodes = std::stoi(str_ccn);
   int numRunnings = std::stoi(str_nR);
+  int sample_size = std::stoi(str_ss);
 
-  return {config.input_folder, config.output_folder, cut_sol, cut_comb_nodes, numRunnings};
+  return {config.input_folder, config.output_folder, cut_sol, cut_comb_nodes, sample_size, numRunnings};
 }
 
 std::shared_ptr<mna::IoTNetwork>

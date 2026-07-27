@@ -14,6 +14,7 @@ import dimna.model.options;
 import dimna.io.output_writer;
 
 import dimna.allocator.di_allocator;
+//import dimna.policy.searcher.di_allocator;
 
 mna::di::Options setup_options(int argc, char* argv[]);
 std::shared_ptr<mna::IoTNetwork> setup_network(mna::InstanceStructure& instance, mna::ParquetReader& pr);
@@ -28,11 +29,12 @@ main (int argc, char *argv[]) {
   
   mna::ParquetReader pr;
 
+  
   constexpr int CUT_SOL = 2;
   
   // Looping on different networks present at the input folder
   for (auto& [key, instance] : instances_map){
-
+  
     auto network = setup_network(instance, pr);
 
     // Looping through jobs configurantions (light and heavy)
@@ -42,7 +44,6 @@ main (int argc, char *argv[]) {
       run(network, jobs, di_options);
     }
   }
-
   return 0;
 }
 
@@ -53,19 +54,19 @@ run(std::shared_ptr<mna::IoTNetwork> network, mna::JobVector& jobs, mna::di::Opt
     case 1:{
       mna::di::DiRunner<mna::di::CanonFixedDiAllocator<1>> runner(network, di_options);
 
-      runner.run_mna_jobs_batch(jobs);
+      runner.run_mna_jobs_batch(jobs, di_options.sample_size);
     }
     break;
     case 2:{
       mna::di::DiRunner<mna::di::CanonFixedDiAllocator<2>> runner(network, di_options);
 
-      runner.run_mna_jobs_batch(jobs);
+      runner.run_mna_jobs_batch(jobs, di_options.sample_size);
     }  
     break;
     case 3:{
       mna::di::DiRunner<mna::di::CanonFixedDiAllocator<3>> runner(network, di_options);
 
-      runner.run_mna_jobs_batch(jobs);
+      runner.run_mna_jobs_batch(jobs, di_options.sample_size);
     }
       break;
  } 
@@ -77,18 +78,21 @@ setup_options(int argc, char* argv[]){
   std::string str_cs;
   std::string str_ccn;
   std::string str_nR;
+  std::string str_ss;
 
   mna::OptionsMap map = {{"--cs", &str_cs},
                         {"--ccn", &str_ccn},
-                        {"--runs", &str_nR}};
+                        {"--runs", &str_nR},
+                        {"--sample_size", &str_ss}};
 
   mna::Config config = mna::read_CLI(argc, argv, map);
 
   int cut_sol = std::stoi(str_cs);
   int cut_comb_nodes = std::stoi(str_ccn);
   int numRunnings = std::stoi(str_nR);
+  int sample_size = std::stoi(str_ss);
 
-  return {config.input_folder, config.output_folder, cut_sol, cut_comb_nodes, numRunnings};
+  return {config.input_folder, config.output_folder, cut_sol, cut_comb_nodes, sample_size, numRunnings};
 }
 
 std::shared_ptr<mna::IoTNetwork>

@@ -1,4 +1,4 @@
-module;
+#pragma once
 #include <cstdint>
 #include <memory>
 #include <filesystem>
@@ -6,13 +6,12 @@ module;
 #include <vector>
 #include <arrow/type_fwd.h>
 #include <arrow/result.h>
-export module mna.io.parquet_reader;
 
 namespace mna {
 
 namespace fs = std::filesystem;
 
-export class ParquetReader{
+class ParquetReader{
 private:
   using VertexCallback = std::function<void(int64_t R, int64_t B, int64_t busy, int64_t inactive)>;
   using EdgeCallback = std::function<void(int32_t source, int32_t target, int32_t latency)>;

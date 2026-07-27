@@ -8,17 +8,19 @@ find_package(Parquet CONFIG REQUIRED)
 
 target_sources(libMNA
   PUBLIC
-  FILE_SET cxx_modules TYPE CXX_MODULES FILES
-  model/iot_network.mpp
-  model/job.mpp
-  io/cli_parser.mpp
-  io/ParquetReader.mpp
-  io/directory_scanner.mpp
+  FILE_SET HEADERS
+  BASE_DIRS ${CMAKE_SOURCE_DIR}
+  FILES
+  model/iot_network.hpp
+  model/job.hpp
+  io/cli_parser.hpp
+  io/ParquetReader.hpp
+  io/directory_scanner.hpp
 
   PRIVATE
   io/ParquetReader.cpp
 )
-target_link_libraries(libMNA PRIVATE 
+target_link_libraries(libMNA PUBLIC
   Arrow::arrow_static
   Parquet::parquet_static)
 

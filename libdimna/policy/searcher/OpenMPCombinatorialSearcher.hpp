@@ -1,0 +1,184 @@
+#pragma once
+#include <algorithm>
+#include <vector>
+#include <cstdint>
+#include <memory>
+#include <omp.h>
+#include <array>
+
+#include "libdimna/policy/constants.hpp"
+#include "libdimna/model/Solution.hpp"
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
+
+namespace mna::di::policy {
+
+/* Defines the search-space exploration algorithm
+*/
+class OpenMPCombSearcher;
+
+
+class OpenMPCombSearcher{
+
+private:
+
+  using std::vector;
+
+  int _cs;
+  vector<int64_t> _bbs; // binom buckets
+
+  #pragma omp declare reduction(reduce_result:struct Result : )
+
+  void of_compare();
+
+  int gen_next(vector<int>& comb, int n, int k)
+  {
+
+    int size = comb.size();
+
+    for(int i = size-1, int idx = 0; i >= 0; i--, idx++){
+      if(comb[i] < n - size + i){
+        comb[i]++;
+
+        for(int j = i + 1; j < size; j++){
+          comb[j] = comb[j-1] + 1;
+        }
+        return idx;
+      }
+    }
+
+    if(comb.size() >= k){
+      exit(1);
+    }
+
+    comb.resize(size+1);
+    for(int i=0; i<comb.size(); i++){
+      comb[i] = i;
+    }
+
+    return comb.size()-1;
+  }
+
+  int64_t
+  binom(int n, int k)
+  {
+
+    int64_t top = 1;
+    int64_t bot = 1;
+    for(int i=1; i<=k; i++){
+      top *= n-i+1;
+      bot *= i;
+    }
+    return top/bot;
+  }
+
+  vector<int> infer_combination(const int64_t i, const int64_t n)
+  {
+    int64_t b;
+    vector<int> comb;
+
+    // ---------- Calculates bucket (a.k.a size) of the combination
+
+    for(b=0; b<_bbs.size(); b++){
+      if(i < _bbs[b])
+        break;
+    }
+    comb.reserve(b+1);
+
+    // ---------- Infers each component of the combination
+
+    // Combinations of size 1 are sorted intergers ...
+    if(b == 0){
+      comb.push_back(i);
+      return comb;
+    }
+
+    int64_t offset = _bbs[b - 1];
+    int64_t idx = i - offset;
+
+    int x = 0; // smallest candidate element
+
+    for (int j = b+1; j > 0; j--) {
+      for (int v = x; v < n; v++) {
+        int64_t c = binom(n - v - 1, j - 1);
+
+        if (idx < c) {
+          comb.push_back(v);
+          x = v + 1;
+          break;
+        } else {
+          idx -= c;
+        }
+      }
+    }
+
+    return comb;
+  }
+
+  int64_t
+  combinatorial_range(int n, int k)
+  {
+    _bbs.resize(k);
+    int64_t prefix=0;
+
+    for(int i=1; i<=k; i++){
+      prefix+=binom(n, i);
+      _bbs[i-1] = prefix;
+    }
+    return prefix;
+  }
+
+public:
+  OpenMPCombSearcher(int cut_sol=0) : _cs{cut_sol} {}
+
+  Solution
+  find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
+
+    int num_nodes = valid_nodes.size();
+    int64_t best_OF = INF64;
+
+    const auto& nodes = network->vertexes();
+
+    auto jr_job = job.resource;
+    auto jb_job = job.bandth;
+    auto l_job = job.latency - t_c;
+
+    int64_t total = combinatorial_range(num_nodes, _cs);
+    int num_t = omp_get_max_threads();
+
+    #pragma omp parallel
+    {
+
+      int tid = omp_get_thread_num();
+      int64_t comb_idx = INF64;
+
+      int64_t range = (total+num_t-1)/num_t;
+      int64_t starting_index = tid * range;
+      int64_t end = std::min(start+chunk, total);
+
+      vector<int> comb = infer_combination(starting_index, num_nodes);
+      int b_usage = comb.size();
+
+      auto local_of = calculate_of(comb, b_usage, r_buff, b_buff, l_buff)
+
+      // int half_range = range/2; --> folding has no use if we buffer the OF calculation
+
+      vector<int> r_buff{comb.size(), 0};
+      vector<int> b_buff{comb.size(), 0};
+      vector<int> l_buff{comb.size(), 0};
+
+      for(int i=0; i<comb.size(); i++){
+        r_buff[i] += nodes[valid_nodes[comb[i]]].resource;
+        b_buff[i] += nodes[valid_nodes[comb[i]]].bandwidth;
+        l_buff[i] += latencies[valid_nodes[comb[i]]];
+      }
+
+      for(int64_t i=start; i<end; i++){
+        int64_t curr_of = calculate_of(comb, b_usage, r_buff, b_buff, l_buff);
+        of_compare(local_of, comb_idx, curr_of, i);
+        b_usage = gen_next(comb, num_nodes, _cs);
+      }
+    }
+  }
+}
+}

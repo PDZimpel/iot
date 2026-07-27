@@ -1,4 +1,4 @@
-module;
+#pragma once
 #include <algorithm>
 #include <vector>
 #include <cstdint>
@@ -6,34 +6,26 @@ module;
 #include <array>
 #include "kernel.h"
 
-export module dimna.policy.searcher.cuda.comb_searcher;
+#include "libdimna/model/Solution.hpp"
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
 
-import dimna.model.solution;
-import mna.model.iot_network;
-import mna.model.job;
+#include "libdimna/policy/constants.hpp"
 
 namespace mna::di::policy {
 
-constexpr int64_t INF64 = 1LL << 40;
-constexpr int INF32 = 1 << 30;
-constexpr int t_c = 1;
-constexpr int INVALID_NODE = -1;
-
 /* Defines the search-space exploration algorithm
 */
-export class CudaCombSearcher;
-
-
 class CudaCombSearcher{
 
 private:
   int _cs;
-  std::vector<int> _bbs; 
+  std::vector<int> _bbs;
 
 public:
   CudaCombSearcher(int cut_sol=0) : _cs{cut_sol} {}
 
-  int64_t 
+  int64_t
   binom(int n, int k)
   {
     int64_t top = 1;
@@ -57,10 +49,10 @@ public:
             break;
         prefix += calc;
     }
-    
+
     int size = b + 1;
     comb.reserve(size);
-    
+
     if(b == 0){
         comb.push_back((int)(i - prefix));
         return comb;
@@ -98,10 +90,10 @@ public:
     return prefix;
   }
 
-  Solution 
+  Solution
   find_best_comb(
-    std::shared_ptr<IoTNetwork> network, 
-    mna::Job& job, std::vector<int>& valid_nodes, 
+    std::shared_ptr<IoTNetwork> network,
+    mna::Job& job, std::vector<int>& valid_nodes,
     std::vector<int32_t>& latencies
   )
   {
@@ -111,7 +103,7 @@ public:
     bandwidths.resize(num_nodes);
     valid_latencies.resize(num_nodes);
     auto& nodes = network->vertexes();
-    
+
 
     for(int i=0; i<valid_nodes.size(); i++){
       resources[i] = nodes[valid_nodes[i]].resource;
@@ -130,8 +122,8 @@ public:
     job.bandwidth,
     job.latency-1,
   // Network info
-    resources.data(), 
-    bandwidths.data(), 
+    resources.data(),
+    bandwidths.data(),
     valid_latencies.data(),
   // Output
     &best_comb,

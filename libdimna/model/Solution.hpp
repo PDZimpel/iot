@@ -1,12 +1,10 @@
-module;
+#pragma once
 #include <vector>
 #include <cstdint>
 
-export module dimna.model.solution;
-
 namespace mna::di {
 
-export struct Solution{
+struct Solution{
   int64_t of;
   std::vector<int> nodes;
 };

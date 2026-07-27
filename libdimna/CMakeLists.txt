@@ -12,19 +12,21 @@ target_sources(libdimna
 
 target_sources(libdimna
   PUBLIC
-  FILE_SET cxx_modules TYPE CXX_MODULES FILES
-  allocator/DiAllocator.mpp
-  allocator/DiRunner.mpp
-  io/OutputWriter.mpp
-  model/Solution.mpp
-  model/Options.mpp
-  model/Times.mpp
-  policy/filter/FixedFilter.mpp
-  policy/filter/CanonFixedFilter.mpp
-  policy/filter/OpenMPFixedFilter.mpp
-  policy/searcher/FixedSearcher.mpp
-  policy/searcher/OpenMPFixedSearcher.mpp
-  policy/searcher/CudaCombinatorialSearcher.mpp
+  FILE_SET HEADERS
+  BASE_DIRS ${CMAKE_SOURCE_DIR}
+  FILES
+  allocator/DiAllocator.hpp
+  allocator/DiRunner.hpp
+  io/OutputWriter.hpp
+  model/Solution.hpp
+  model/Options.hpp
+  model/Times.hpp
+  policy/filter/FixedFilter.hpp
+  policy/filter/CanonFixedFilter.hpp
+  policy/filter/OpenMPFixedFilter.hpp
+  policy/searcher/FixedSearcher.hpp
+  policy/searcher/OpenMPFixedSearcher.hpp
+  policy/searcher/CudaCombinatorialSearcher.hpp
 )
 
 target_link_libraries(libdimna
@@ -34,8 +36,8 @@ target_link_libraries(libdimna
   OpenMP::OpenMP_CXX
 )
 
-target_link_libraries(libdimna PRIVATE 
- tabulate::tabulate 
+target_link_libraries(libdimna PUBLIC
+ tabulate::tabulate
 )
 # target_compile_options(libgraphs PRIVATE -Werror)
 

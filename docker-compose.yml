@@ -1,0 +1,35 @@
+services:
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - vcpkg-cache:/opt/vcpkg-cache
+    command: ["bash", "./docker/build.sh"]
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      build:
+        condition: service_completed_successfully
+    working_dir: /workspace
+    environment:
+      - DIMNA_BUILD_DIR=/workspace/build-docker
+    volumes:
+      - .:/workspace
+      - vcpkg-cache:/opt/vcpkg-cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: ["python3", "run.py"]
+
+volumes:
+  vcpkg-cache:

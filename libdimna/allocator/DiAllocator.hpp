@@ -1,4 +1,4 @@
-module;
+#pragma once
 #include <cstdint>
 #include <vector>
 #include <memory>
@@ -9,43 +9,43 @@ module;
 #include <utility>
 #include <iostream>
 #include <chrono>
-export module dimna.allocator.di_allocator;
 
-import mna.model.iot_network;
-import mna.model.job;
-import dimna.model.solution;
-import dimna.model.times;
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
+#include "libdimna/model/Solution.hpp"
+#include "libdimna/model/Times.hpp"
 
-import dimna.policy.filter.fixed_filter;
-import dimna.policy.filter.canon_fixed_filter;
-import dimna.policy.filter.openmp.fixed_filter;
+#include "libdimna/policy/filter/FixedFilter.hpp"
+#include "libdimna/policy/filter/CanonFixedFilter.hpp"
+#include "libdimna/policy/filter/OpenMPFixedFilter.hpp"
 
-import dimna.policy.searcher.fixed_searcher;
-import dimna.policy.searcher.openmp.fixed_searcher;
-import dimna.policy.searcher.cuda.comb_searcher;
+#include "libdimna/policy/searcher/FixedSearcher.hpp"
+#include "libdimna/policy/searcher/OpenMPFixedSearcher.hpp"
+#include "libdimna/policy/searcher/CudaCombinatorialSearcher.hpp"
+#include "libdimna/policy/constants.hpp"
 
 namespace mna::di {
 
-constexpr int64_t INF64 = 1LL << 40;
-constexpr int INF32 = 1 << 30;
-constexpr int t_c = 1;
-constexpr int INVALID_NODE = -1;
+using policy::INF64;
+using policy::INF32;
+using policy::t_c;
+using policy::INVALID_NODE;
 
-export struct Result{
+struct Result{
   std::vector<Solution> solutions;
   Times times;
 };
 
-export template <typename FilterPolicy, typename SearchPolicy>
+template <typename FilterPolicy, typename SearchPolicy>
 class DiAllocator{
 public:
   DiAllocator(std::shared_ptr<IoTNetwork> network, int cut_sol, int cut_comb_nodes)
   :network(network), cut_sol(cut_sol), cut_comb_nodes(cut_comb_nodes){}
   DiAllocator() = default;
 
-  Result run_mna_jobs(JobVector& jobs);
+  Result run_mna_jobs(JobVector& jobs, int sample_size=0);
 //private:
-  std::shared_ptr<IoTNetwork> network;  
+  std::shared_ptr<IoTNetwork> network;
   int cut_sol;
   int cut_comb_nodes;
 
@@ -65,8 +65,8 @@ public:
 
 template <typename FilterPolicy, typename SearchPolicy>
 Result
-DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
-  
+DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs, int sample_size){
+
   int num_nodes = network->vertex_count();
   std::vector<int32_t> latencies(num_nodes);
 
@@ -76,23 +76,27 @@ DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
 
   auto& nodes = network->vertexes();
 
-  Times times{};  
+  Times times{};
   // int t = 0;
-  for (auto& job : jobs){
+  int it_size = sample_size ? sample_size : jobs.size();
+  for(int i=0; i<it_size; i++){
+    //printf("Job %d\n", i);
+    auto& job = jobs[i];
+  //for (auto& job : jobs){
     // printf("Table index: %d\n", t++);
     auto origin = job.origin;
-    
+
     auto start = std::chrono::steady_clock::now();
-    
+
     // Getting the latencies from the origin node to all of the others on the network
     get_latencies(origin, latencies);
-    
+
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> diff_in_seconds = end - start;
     times.latencies += diff_in_seconds.count();
 
     start = std::chrono::steady_clock::now();
-    
+
     // Filtering nodes based on wheter the job fits in a combination that includes it
     auto filtered_nodes = fp.preselect_nodes(network, job, latencies, cut_comb_nodes);
 
@@ -112,7 +116,7 @@ DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
 
     // Testing all combinations of nodes that passed the filter
     Solution solution = sp.find_best_comb(network, job, filtered_nodes, latencies);
-    
+
     end = std::chrono::steady_clock::now();
     diff_in_seconds = end - start;
     times.search += diff_in_seconds.count();
@@ -121,7 +125,7 @@ DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
 
       // Mark valid nodes as busy, removing placeholder node indexes
       for (int i = solution.nodes.size() - 1; i >= 0; --i){
-        
+
         if (solution.nodes[i] < 0){
           solution.nodes.pop_back();
         }
@@ -130,20 +134,20 @@ DiAllocator<FilterPolicy, SearchPolicy>::run_mna_jobs(JobVector& jobs){
           nodes[n].busy = 1;
         }
       }
-      
+
       solutions.push_back(solution);
     }
     else{
     // Sets OF to zero if no valid combination was found
       solutions.push_back({0, std::vector<int>()});
     }
-    
+
   }
   return Result{solutions, times};
 }
 
 
-/* Sets latencies to hold the minimum latency path 
+/* Sets latencies to hold the minimum latency path
  * from the origin node to all the other nodes.
 */
 template <typename FilterPolicy, typename SearchPolicy>
@@ -160,19 +164,19 @@ DiAllocator<FilterPolicy, SearchPolicy>::get_latencies(int origin, std::vector<i
 
   // Resets the latencies vector
   std::fill(latencies.begin(), latencies.end(), INF32);
-  
+
   // Inclusion of origin node
   latencies[origin] = 0;
 
   heap.push(nodePair{0, origin});
-  
+
   while (!heap.empty()) {
     auto [curr_lat, node] = heap.top();
     heap.pop();
-    
+
     if (curr_lat > latencies[node])
       continue;
-    
+
     // Getting all adjacent nodes
     const auto& edges = network->get_vertex_edges(node);
 
@@ -182,15 +186,15 @@ DiAllocator<FilterPolicy, SearchPolicy>::get_latencies(int origin, std::vector<i
         latencies[target] = curr_lat + weight;
         heap.push(nodePair{latencies[target], target});
       }
-    } 
+    }
   }
 }
 
-export template<int CutSol> using FixedDiAllocator = DiAllocator<policy::FixedFilter<CutSol>, policy::FixedSearcher<CutSol>>;
+template<int CutSol> using FixedDiAllocator = DiAllocator<policy::FixedFilter<CutSol>, policy::FixedSearcher<CutSol>>;
 
-export template<int CutSol> using CanonFixedDiAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::FixedSearcher<CutSol>>;
+template<int CutSol> using CanonFixedDiAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::FixedSearcher<CutSol>>;
 
-export template<int CutSol> using OpenMPFixedAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::OpenMPFixedSearcher<CutSol>>;
+template<int CutSol> using OpenMPFixedAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::OpenMPFixedSearcher<CutSol>>;
 
-export template<int CutSol> using CudaAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::CudaCombSearcher>;
+template<int CutSol> using CudaAllocator = DiAllocator<policy::CanonFixedFilter<CutSol>, policy::CudaCombSearcher>;
 } // dimna namespace

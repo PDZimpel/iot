@@ -1,7 +1,7 @@
-export module dimna.model.times;
+#pragma once
 
 namespace mna::di{
-export struct Times{
+struct Times{
   double total{};
   double latencies{};
   double filter{};

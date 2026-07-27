@@ -1,28 +1,26 @@
-module;
-
+#pragma once
 #include <stdexcept>
 #include <string>
 #include <cstring>
 #include <unordered_map>
 #include <format>
 #include <iostream>
-export module mna.io.cli_parser;
 
 namespace mna {
 
-export struct Config{
+struct Config{
   std::string input_folder{};
   std::string output_folder{};
   bool showHelp{};
 };
 
-export using OptionsMap = std::unordered_map<std::string, std::string*>;
+using OptionsMap = std::unordered_map<std::string, std::string*>;
 
-export Config
+inline Config
 read_CLI (int argc, char* argv[], const mna::OptionsMap extra_options = {}){
 
   using namespace std;
-  
+
   auto valid_argument = [&](const char* b, int i){
     return std::strcmp(argv[i], b) == 0;
   };
@@ -53,11 +51,11 @@ read_CLI (int argc, char* argv[], const mna::OptionsMap extra_options = {}){
       if(i+1 > argc)
         throw runtime_error(format("Error: {} option requires a directory path.", arg));
 
-      targets.output_folder = argv[i+1]; 
+      targets.output_folder = argv[i+1];
       ++i;
     }
 
-    else if (extra_options.count(std::string(arg))){ 
+    else if (extra_options.count(std::string(arg))){
       if(i+1 > argc)
         throw runtime_error(format("Error: {} option requires a value.", arg));
 

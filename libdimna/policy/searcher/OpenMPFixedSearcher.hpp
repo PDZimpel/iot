@@ -1,30 +1,24 @@
-module;
+#pragma once
 #include <algorithm>
 #include <vector>
 #include <cstdint>
 #include <memory>
 #include <omp.h>
 #include <array>
+#include "libdimna/model/Solution.hpp"
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
 
-export module dimna.policy.searcher.openmp.fixed_searcher;
-
-import dimna.model.solution;
-import mna.model.iot_network;
-import mna.model.job;
+#include "libdimna/policy/constants.hpp"
 
 namespace mna::di::policy {
 
-constexpr int64_t INF64 = 1LL << 40;
-constexpr int INF32 = 1 << 30;
-constexpr int t_c = 1;
-constexpr int INVALID_NODE = -1;
-
 /* Defines the search-space exploration algorithm
 */
-export template <int CutSol> class OpenMPFixedSearcher;
+template <int CutSol> class OpenMPFixedSearcher;
 
 template<typename A, typename B>
-bool
+inline bool
 lexical_compare(const A& a, const B& b)
 {
   const size_t size = std::min(a.size(), b.size());
@@ -47,11 +41,11 @@ public:
 
   OpenMPFixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
 
-  Solution 
+  Solution
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
-    
+
     int num_t = omp_get_max_threads();
-    
+
     // Initialize thread local result vectors
     std::vector<int64_t> local_of(num_t, INF64);
     std::vector<int> local_comb(
@@ -64,7 +58,7 @@ public:
     int64_t best_OF = INF64;
 
     const auto& nodes = network->vertexes();
-    
+
     auto jr_job = job.resource;
     auto jb_job = job.bandwidth;
     auto l_job = job.latency - t_c;
@@ -78,7 +72,7 @@ public:
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
-      
+
       if (single_R >= jr_job && single_B >= jb_job && single_L <= l_job){
         int64_t f0 = single_R - jr_job;
         int64_t f1 = single_B - jb_job;
@@ -101,7 +95,7 @@ public:
     if(it != local_of.end()){
       best_OF = *it;
       idx = std::distance(local_of.begin(), it);
-    } 
+    }
     best_comb[0] = local_comb[idx];
 
     return Solution{best_OF, std::move(best_comb)};
@@ -119,21 +113,21 @@ public:
 
   OpenMPFixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
 
-  Solution 
+  Solution
   find_best_comb(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
-    
+
     int num_nodes = valid_nodes.size();
     std::vector<int> best_comb(2, INVALID_NODE);
     int64_t best_OF = INF64;
 
     const auto& nodes = network->vertexes();
-    
+
     auto jr_job = job.resource;
     auto jb_job = job.bandwidth;
     auto l_job = job.latency - t_c;
 
     int num_t = omp_get_max_threads();
-    
+
     // Initialize thread local result vectors
     std::vector<int64_t> local_of(num_t, INF64);
     std::vector<std::vector<int>> local_comb(
@@ -143,14 +137,14 @@ public:
 
     #pragma omp parallel for schedule(dynamic, 10)
     for (auto it_i = valid_nodes.begin(); it_i != valid_nodes.end(); ++it_i){
-      
+
       int tnum = omp_get_thread_num();
 
       int i = *it_i;
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
-      
+
       if (single_R >= jr_job && single_B >= jb_job && single_L <= l_job){
         int64_t f0 = single_R - jr_job;
         int64_t f1 = single_B - jb_job;
@@ -173,7 +167,7 @@ public:
         auto sum_R = single_R + nodes[j].resource;
         auto sum_B = single_B + nodes[j].bandwidth;
         auto sum_L = single_L + latencies[j];
-        
+
         if (sum_R >= jr_job && sum_B >= jb_job && sum_L <= l_job){
           int64_t f0 = sum_R - jr_job;
           int64_t f1 = sum_B - jb_job;
@@ -212,7 +206,7 @@ public:
         }
       }
     }
- 
+
     best_comb = local_comb[idx];
     best_OF = local_of[idx];
     return Solution{best_OF, std::move(best_comb)};
@@ -230,15 +224,15 @@ public:
 
   OpenMPFixedSearcher(int cut_sol=1) : _cs{cut_sol} {}
 
-  Solution 
+  Solution
   find_best_comb(std::shared_ptr<IoTNetwork> network, const mna::Job& job, const std::vector<int>& valid_nodes, std::vector<int32_t>& latencies){
-    
+
     int num_nodes = valid_nodes.size();
     std::vector<int> best_comb(3, INVALID_NODE);
     int64_t best_OF = INF64;
 
     const auto& nodes = network->vertexes();
-    
+
     auto jr_job = job.resource;
     auto jb_job = job.bandwidth;
     auto l_job = job.latency - t_c;
@@ -264,7 +258,7 @@ public:
       partial_R[0] = nodes[i].resource;
       partial_B[0] = nodes[i].bandwidth;
       partial_L[0] = latencies[i];
-      
+
       if (partial_R[0] >= jr_job && partial_B[0] >= jb_job && partial_L[0] <= l_job){
         int64_t f0 = partial_R[0] - jr_job;
         int64_t f1 = partial_B[0] - jb_job;
@@ -291,7 +285,7 @@ public:
         partial_R[1] = partial_R[0] + nodes[j].resource;
         partial_B[1] = partial_B[0] + nodes[j].bandwidth;
         partial_L[1] = partial_L[0] + latencies[j];
-        
+
         if (partial_R[1] >= jr_job && partial_B[1] >= jb_job && partial_L[1] <= l_job){
           int64_t f0 = partial_R[1] - jr_job;
           int64_t f1 = partial_B[1] - jb_job;
@@ -319,7 +313,7 @@ public:
           partial_R[2] = partial_R[1] + nodes[k].resource;
           partial_B[2] = partial_B[1] + nodes[k].bandwidth;
           partial_L[2] = partial_L[1] + latencies[k];
-          
+
           if (partial_R[2] >= jr_job && partial_B[2] >= jb_job && partial_L[2] <= l_job){
             int64_t f0 = partial_R[2] - jr_job;
             int64_t f1 = partial_B[2] - jb_job;
@@ -358,7 +352,7 @@ public:
         }
       }
     }
- 
+
     best_comb = local_comb[idx];
     best_OF = local_of[idx];
     return Solution{best_OF, std::move(best_comb)};

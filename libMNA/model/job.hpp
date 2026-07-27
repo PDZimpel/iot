@@ -1,15 +1,14 @@
-module;
+#pragma once
 #include <vector>
-export module mna.model.job;
 
 namespace mna {
 
-export struct Job{
+struct Job{
   int resource;
   int bandwidth;
   int latency;
   int origin;
 };
 
-export using JobVector = std::vector<Job>; 
+using JobVector = std::vector<Job>;
 }

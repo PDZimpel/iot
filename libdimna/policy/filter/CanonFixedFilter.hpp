@@ -1,28 +1,26 @@
-module;
+#pragma once
+#include <cstdlib>
 #include <cstdint>
 #include <set>
 #include <vector>
 #include <memory>
 #include <array>
-export module dimna.policy.filter.fixed_filter;
+#include "libdimna/model/Solution.hpp"
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
 
-import dimna.model.solution;
-import mna.model.iot_network;
-import mna.model.job;
+#include "libdimna/policy/constants.hpp"
 
 namespace mna::di::policy {
 
-constexpr int64_t INF64 = 1LL << 40;
-constexpr int INF32 = 1 << 30;
-constexpr int t_c = 1;
-export template <int CutSol> class FixedFilter;
+template <int CutSol> class CanonFixedFilter;
 
 template<>
-class FixedFilter<1>{
+class CanonFixedFilter<1>{
 public:
   std::vector<int>
   preselect_nodes(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int32_t>& latencies, int cut_comb_nodes){
-    
+
     std::vector<int> valid_nodes;
     int num_nodes = network->vertex_count();
     int combs_found{};
@@ -32,17 +30,18 @@ public:
     auto jr_job = job.resource;
     auto jb_job = job.bandwidth;
     auto l_job = job.latency - t_c;
-    
-    // int checks = 0;
-    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes; ++i){
+
+    int valid_checks = 0;
+
+    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes && valid_checks < cut_comb_nodes; ++i){
       if (static_cast<bool>(nodes[i].busy))
         continue;
-      
-      // ++checks;
+
+      ++valid_checks;
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
-      
+
       if (single_R >= jr_job && single_B >= jb_job && single_L <= l_job){
           valid_nodes.push_back(i);
           ++combs_found;
@@ -52,11 +51,11 @@ public:
   }
 };
 template<>
-class FixedFilter<2>{
+class CanonFixedFilter<2>{
 public:
   std::vector<int>
   preselect_nodes(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int32_t>& latencies, int cut_comb_nodes){
-    
+
     std::set<int> valid_nodes;
     int num_nodes = network->vertex_count();
     int combs_found{};
@@ -67,40 +66,48 @@ public:
     auto jb_job = job.bandwidth;
     auto l_job = job.latency - t_c;
 
-    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes; ++i){
-      if (static_cast<bool>(nodes[i].busy))
-        continue;
-      
+    std::vector<int> free_nodes;
+
+    for (int i = 0; i < num_nodes; ++i)
+      if (!(static_cast<bool>(nodes[i].busy)))
+        free_nodes.push_back(i);
+
+    int num_free = free_nodes.size();
+    num_free = std::min(num_free, cut_comb_nodes);
+
+    for (int idx = 0; idx < num_free && combs_found < cut_comb_nodes; ++idx){
+
+      int i = free_nodes[idx];
+
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
-      
+
       if (single_R >= jr_job && single_B >= jb_job && single_L <= l_job){
           valid_nodes.insert(i);
           ++combs_found;
       }
     }
     // Looking for valid node combinations
-    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes; ++i){
 
-      if (static_cast<bool>(nodes[i].busy))
-        continue;
+    for (int idx_i = 0; idx_i < num_free && combs_found < cut_comb_nodes; ++idx_i){
+
+      int i = free_nodes[idx_i];
 
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
 
-      for (int j = i + 1; j < num_nodes && combs_found < cut_comb_nodes; ++j){
+      for (int idx_j = idx_i + 1; idx_j < num_free && combs_found < cut_comb_nodes; ++idx_j){
 
-        if (static_cast<bool>(nodes[j].busy))
-          continue;
-        
+        int j = free_nodes[idx_j];
+
         auto total_R = single_R + nodes[j].resource;
         auto total_B = single_B + nodes[j].bandwidth;
         auto max_L = std::max(single_L, latencies[j]);
-          
+
         if (total_R >= jr_job && total_B >= jb_job && max_L <= l_job){
-      
+
           valid_nodes.insert(i);
           valid_nodes.insert(j);
           ++combs_found;
@@ -112,11 +119,11 @@ public:
 };
 
 template<>
-class FixedFilter<3>{
+class CanonFixedFilter<3>{
 public:
   std::vector<int>
   preselect_nodes(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int32_t>& latencies, int cut_comb_nodes){
-    
+
     std::set<int> valid_nodes;
     int num_nodes = network->vertex_count();
     int combs_found{};
@@ -127,41 +134,46 @@ public:
     auto jb_job = job.bandwidth;
     auto l_job = job.latency - t_c;
 
+    std::vector<int> free_nodes;
 
-    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes; ++i){
-      if (static_cast<bool>(nodes[i].busy))
-        continue;
-      
+    for (int i = 0; i < num_nodes; ++i)
+      if (!(static_cast<bool>(nodes[i].busy)))
+        free_nodes.push_back(i);
+
+    int num_free = free_nodes.size();
+    num_free = std::min(num_free, cut_comb_nodes);
+    for (int idx_i = 0; idx_i < num_free && combs_found < cut_comb_nodes; ++idx_i){
+
+      int i = free_nodes[idx_i];
+
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
-      
+
       if (single_R >= jr_job && single_B >= jb_job && single_L <= l_job){
           valid_nodes.insert(i);
           ++combs_found;
       }
     }
     // Looking for valid node combinations
-    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes; ++i){
+    for (int idx_i = 0; idx_i < num_free && combs_found < cut_comb_nodes; ++idx_i){
 
-      if (static_cast<bool>(nodes[i].busy))
-        continue;
+      int i = free_nodes[idx_i];
 
       auto single_R = nodes[i].resource;
       auto single_B = nodes[i].bandwidth;
       auto single_L = latencies[i];
 
-      for (int j = i + 1; j < num_nodes && combs_found < cut_comb_nodes; ++j){
+      for (int idx_j = idx_i + 1; idx_j < num_free && combs_found < cut_comb_nodes; ++idx_j){
 
-        if (static_cast<bool>(nodes[j].busy))
-          continue;
-        
+        int j = free_nodes[idx_j];
+
         auto total_R = single_R + nodes[j].resource;
         auto total_B = single_B + nodes[j].bandwidth;
         auto max_L = std::max(single_L, latencies[j]);
-          
+
         if (total_R >= jr_job && total_B >= jb_job && max_L <= l_job){
-      
+
           valid_nodes.insert(i);
           valid_nodes.insert(j);
           ++combs_found;
@@ -173,42 +185,39 @@ public:
     std::array<decltype(jb_job), 3> partial_B;
     std::array<decltype(l_job), 3> max_L;
 
-    for (int i = 0; i < num_nodes && combs_found < cut_comb_nodes; ++i){
+    for (int idx_i = 0; idx_i < num_free && combs_found < cut_comb_nodes; ++idx_i){
 
-      if (static_cast<bool>(nodes[i].busy))
-        continue;
+      int i = free_nodes[idx_i];
 
       partial_R[0] = nodes[i].resource;
       partial_B[0] = nodes[i].bandwidth;
       max_L[0] = latencies[i];
 
-      for (int j = i + 1; j < num_nodes && combs_found < cut_comb_nodes; ++j){
+      for (int idx_j = idx_i + 1; idx_j < num_free && combs_found < cut_comb_nodes; ++idx_j){
 
-        if (static_cast<bool>(nodes[j].busy))
-          continue;
-        
+        int j = free_nodes[idx_j];
+
         partial_R[1] = partial_R[0] + nodes[j].resource;
         partial_B[1] = partial_B[0] + nodes[j].bandwidth;
         max_L[1] = std::max(max_L[0], latencies[j]);
 
-        for (int k = j + 1; k < num_nodes && combs_found < cut_comb_nodes; ++k){
+        for (int idx_k = idx_j + 1; idx_k < num_free && combs_found < cut_comb_nodes; ++idx_k){
 
-          if (static_cast<bool>(nodes[k].busy))
-            continue;
-          
+          int k = free_nodes[idx_k];
+
           partial_R[2] = partial_R[1] + nodes[k].resource;
           partial_B[2] = partial_B[1] + nodes[k].bandwidth;
           max_L[2] = std::max(max_L[1], latencies[k]);
 
           if (partial_R[2] >= jr_job && partial_B[2] >= jb_job && max_L[2] <= l_job){
-        
+
             valid_nodes.insert(i);
             valid_nodes.insert(j);
             valid_nodes.insert(k);
             ++combs_found;
           }
         }
-          
+
       }
     }
 

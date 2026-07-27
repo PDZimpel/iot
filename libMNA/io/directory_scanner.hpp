@@ -1,4 +1,4 @@
-module;
+#pragma once
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -7,22 +7,21 @@ module;
 #include <iostream>
 #include <stdexcept>
 #include <format>
-export module mna.io.directory_scanner;
 
 namespace fs = std::filesystem;
 
 namespace mna {
 
-export struct InstanceStructure{
+struct InstanceStructure{
   fs::path nodes{};
   fs::path manifest{};
   std::vector<fs::path> jobs{};
   std::vector<fs::path> edges{};
 };
 
-export using InstancesMap = std::unordered_map<std::string, InstanceStructure>;
+using InstancesMap = std::unordered_map<std::string, InstanceStructure>;
 
-export void
+inline void
 print_instances_files(std::unordered_map<std::string, InstanceStructure> instances){
   for (auto& [key, value] : instances){
     std::cout << key << "\n";
@@ -40,7 +39,7 @@ print_instances_files(std::unordered_map<std::string, InstanceStructure> instanc
 }
 
 
-export InstancesMap
+inline InstancesMap
 scan_input_dir(std::string input_path){
 
   InstancesMap instances;
@@ -77,10 +76,10 @@ scan_input_dir(std::string input_path){
 
     else if(std::regex_search(file_name, manifest_pattern))
       instances[base_name].manifest = file.path();
-    
+
     else if(std::regex_search(file_name, edges_pattern))
       instances[base_name].edges.push_back(file.path());
-    
+
     else if(std::regex_search(file_name, jobs_pattern)){
       if(!std::regex_search(file_name, info_pattern))
         instances[base_name].jobs.push_back(file.path());
@@ -102,15 +101,3 @@ scan_input_dir(std::string input_path){
   return instances;
 }
 } // mna namespace
-
-
-
-
-
-
-
-
-
-
-
-

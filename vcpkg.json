@@ -9,6 +9,10 @@
         "parquet"
       ]
     },
-    "tabulate"
+    "tabulate",
+    {
+      "name": "faiss",
+      "features": ["gpu"]
+    }
   ]
 }

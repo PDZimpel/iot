@@ -1,13 +1,13 @@
-module;
+#pragma once
 #include <filesystem>
-export module dimna.model.options;
 
 namespace mna::di {
-export struct Options{
+struct Options{
   std::filesystem::path input_dir;
   std::filesystem::path output_dir;
   int cut_sol;
   int cut_comb_nodes;
+  int sample_size;
   int numRunnings;
 };
 }

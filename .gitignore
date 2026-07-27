@@ -1,4 +1,5 @@
 build
+build-docker
 CMakeUserPresets.json
 vcpkg_installed
 out

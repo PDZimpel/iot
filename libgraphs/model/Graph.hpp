@@ -1,10 +1,9 @@
-module;
+#pragma once
 #include <vector>
-export module graphs.model.graph;
 
 namespace graphs {
 
-export template <typename V>
+template <typename V>
 class VertexVector{
 
   std::vector<V> _vertexes;
@@ -34,7 +33,7 @@ public:
 
 };
 
-export template <typename E>
+template <typename E>
 class EdgeAdjacencyList{
 
   std::vector<std::vector<E>> _edges;
@@ -43,7 +42,7 @@ class EdgeAdjacencyList{
 
 public:
   using edge_type = E;
-  
+
   void set_total_vertexes(int v){
     _total_vertexes = v;
     _edges.resize(v);
@@ -65,7 +64,7 @@ public:
 
 };
 
-export template <typename VC, typename EC>
+template <typename VC, typename EC>
 class Graph{
 
   VC _vertexes;
@@ -79,7 +78,7 @@ class Graph{
 public:
   using vertex_type = VC::vertex_type;
   using edge_type = EC::edge_type;
-  
+
   Graph(int total_vertexes){
     this->set_total_vertexes(total_vertexes);
   }
@@ -131,6 +130,3 @@ public:
   int dest(){return _dest;}
   int weight(){return _weight;}
 };
-
-
-

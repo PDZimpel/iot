@@ -1,14 +1,13 @@
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(libgraphs)
+# Header-only now that modules are gone (Graph.hpp has no compiled sources).
+add_library(libgraphs INTERFACE)
 
 target_sources(libgraphs
-  PUBLIC
-  FILE_SET cxx_modules TYPE CXX_MODULES FILES
-  model/Graph.mpp
+  INTERFACE
+  FILE_SET HEADERS
+  BASE_DIRS ${CMAKE_SOURCE_DIR}
+  FILES
+  model/Graph.hpp
 )
-
-# target_compile_options(libgraphs PRIVATE -Werror)
-
-set_target_properties(libgraphs PROPERTIES PREFIX "")

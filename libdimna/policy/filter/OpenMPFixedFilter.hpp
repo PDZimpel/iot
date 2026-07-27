@@ -1,24 +1,18 @@
-module;
+#pragma once
 #include <cstdint>
 #include <set>
 #include <vector>
 #include <memory>
 #include <array>
 #include <functional>
-export module dimna.policy.filter.openmp.fixed_filter;
-
-import dimna.model.solution;
-import mna.model.iot_network;
-import mna.model.job;
+#include "libdimna/model/Solution.hpp"
+#include "libMNA/model/iot_network.hpp"
+#include "libMNA/model/job.hpp"
+#include "libdimna/policy/constants.hpp"
 
 namespace mna::di::policy {
 
-constexpr int64_t INF64 = 1LL << 40;
-constexpr int INF32 = 1 << 30;
-constexpr int t_c = 1;
-constexpr int CHUNK_SIZE = 1000;
-
-export template <int CutSol> class OpenMPFixedFilter;
+template <int CutSol> class OpenMPFixedFilter;
 
 /*
 void merge(
@@ -45,7 +39,7 @@ void merge(
 }
 */
 
-void
+inline void
 unrolled_dfs_1(
   std::set<int>& valid_nodes,
   const auto& nodes,
@@ -83,7 +77,7 @@ unrolled_dfs_1(
   combs_found+=max;
 }
 
-void
+inline void
 unrolled_dfs_2(
   std::set<int>& valid_nodes,
   const auto& nodes,
@@ -104,7 +98,7 @@ unrolled_dfs_2(
   // Looking for valid node combinations
   #pragma omp parallel
 {
-  
+
   std::vector<int> local;
 
   #pragma omp for nowait
@@ -124,13 +118,13 @@ unrolled_dfs_2(
         if(combs_found >= cut_comb_nodes)
           continue;
         int j = free_nodes[idx_j];
-        
+
         auto total_R = single_R + nodes[j].resource;
         auto total_B = single_B + nodes[j].bandwidth;
         auto max_L = std::max(single_L, latencies[j]);
-          
+
         if (total_R >= jr_job && total_B >= jb_job && max_L <= l_job){
-      
+
           local.push_back(i);
           local.push_back(j);
 
@@ -138,13 +132,13 @@ unrolled_dfs_2(
           ++combs_found;
         }
       }
-    }  
+    }
     #pragma omp critical
     valid_nodes.insert(local.begin(), local.end());
 }
 }
 
-void
+inline void
 unrolled_dfs_3(
   std::set<int>& valid_nodes,
   const auto& nodes,
@@ -184,7 +178,7 @@ unrolled_dfs_3(
         continue;
 
       int j = free_nodes[idx_j];
-      
+
       partial_R[1] = partial_R[0] + nodes[j].resource;
       partial_B[1] = partial_B[0] + nodes[j].bandwidth;
       max_L[1] = std::max(max_L[0], latencies[j]);
@@ -194,20 +188,20 @@ unrolled_dfs_3(
         continue;
 
         int k = free_nodes[idx_k];
-        
+
         partial_R[2] = partial_R[1] + nodes[k].resource;
         partial_B[2] = partial_B[1] + nodes[k].bandwidth;
         max_L[2] = std::max(max_L[1], latencies[k]);
 
         if (partial_R[2] >= jr_job && partial_B[2] >= jb_job && max_L[2] <= l_job){
-      
+
           valid_nodes.insert(i);
           valid_nodes.insert(j);
           valid_nodes.insert(k);
           ++combs_found;
         }
       }
-        
+
     }
   }
 }
@@ -217,7 +211,7 @@ class OpenMPFixedFilter<1>{
 public:
   std::vector<int>
   preselect_nodes(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int32_t>& latencies, int cut_comb_nodes){
-    
+
     std::set<int> valid_nodes;
     int num_nodes = network->vertex_count();
     int combs_found{};
@@ -252,7 +246,7 @@ class OpenMPFixedFilter<2>{
 public:
   std::vector<int>
   preselect_nodes(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int32_t>& latencies, int cut_comb_nodes){
-    
+
     std::set<int> valid_nodes;
     int num_nodes = network->vertex_count();
     int combs_found{};
@@ -295,7 +289,7 @@ public:
     ret.insert(ret.end(), valid_nodes.begin(), valid_nodes.end());
 
     return ret;
-    
+
   }
 };
 
@@ -304,7 +298,7 @@ class OpenMPFixedFilter<3>{
 public:
   std::vector<int>
   preselect_nodes(std::shared_ptr<IoTNetwork> network, mna::Job& job, std::vector<int32_t>& latencies, int cut_comb_nodes){
-    
+
     std::set<int> valid_nodes;
     int num_nodes = network->vertex_count();
     int combs_found{};
@@ -363,7 +357,7 @@ public:
     ret.insert(ret.end(), valid_nodes.begin(), valid_nodes.end());
 
     return ret;
-    
+
   }
 };
 

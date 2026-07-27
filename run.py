@@ -1,7 +1,11 @@
 import subprocess
 import os
 
-base_in = "../inputs/parquet/"
+build_dir = os.environ.get("DIMNA_BUILD_DIR", "./build-docker")
+print(build_dir)
+binary = f"{build_dir}/cuda_dimna/cuda_dimna"
+
+base_in = "./inputs/parquet/"
 base_out = "./output/"
 
 
@@ -22,11 +26,12 @@ for input in inputs[2:3]:
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
 
-            subprocess.run(["./build/canon_dimna/canon_di_mna",
+            subprocess.run([binary,
                             "--in", base_in + input,
                             "--out", out_path,
                             "--runs", runs,
                             "--cs", a,
-                            "--ccn", b])
+                            "--ccn", b,
+                            "--sample_size", "0"])
 
     print(input, "done.")
